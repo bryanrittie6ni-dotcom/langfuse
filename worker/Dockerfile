@@ -2,10 +2,14 @@
 FROM --platform=${TARGETPLATFORM:-linux/amd64} node:24-alpine AS alpine
 
 # It's important to update the index before installing packages to ensure you're getting the latest versions.
+# 国内镜像: 替换 Alpine 源为阿里云镜像
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 RUN apk update && apk upgrade --no-cache libcrypto3 libssl3 libc6-compat busybox ssl_client zlib
 
 FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine AS build-base
+# 国内镜像: npm 淘宝源
+RUN npm config set registry https://registry.npmmirror.com
 # Pin turbo to avoid nondeterministic prune output from future patch releases.
 RUN npm install turbo@2.9.14 --global
 ENV PNPM_HOME="/pnpm"
@@ -35,6 +39,8 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=pruner /app/out/json/ .
 
+# 国内镜像: 确保 pnpm 也使用淘宝源
+ENV npm_config_registry=https://registry.npmmirror.com
 RUN pnpm install --frozen-lockfile
 
 # pass public variables in build step
@@ -56,7 +62,9 @@ FROM --platform=${TARGETPLATFORM:-linux/amd64} builder AS prod-deps
 # @langfuse/shared still pulls in next-auth transitively, so keep the deploy output
 # intact here instead of pruning node_modules in Docker.
 # Keep legacy deploy until the worker Docker image is verified with pnpm's default deploy implementation.
-RUN pnpm --filter worker deploy --legacy --prod /prod/worker && \
+# 移除 worker 不需要的 next-auth patch，避免 ERR_PNPM_UNUSED_PATCH
+RUN sed -i '/^patchedDependencies:/,+1d' ./pnpm-workspace.yaml && \
+    pnpm --filter worker deploy --legacy --prod /prod/worker && \
     builder_prisma_client_dir="$(find /app/node_modules/.pnpm -path '*/node_modules/@prisma/client' -type d | head -n 1)" && \
     deployed_prisma_client_dir="$(find /prod/worker/node_modules/.pnpm -path '*/node_modules/@prisma/client' -type d | head -n 1)" && \
     builder_prisma_runtime_dir="$(dirname "$(dirname "$builder_prisma_client_dir")")/.prisma" && \
@@ -70,6 +78,8 @@ FROM --platform=${TARGETPLATFORM:-linux/amd64} runtime-base AS runner
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 
+# 国内镜像: 替换 Alpine 源
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --no-cache dumb-init
 
 WORKDIR /app

@@ -105,14 +105,18 @@ export const PutLlmConnectionV1Body = PutLlmConnectionV1BodyBase.superRefine(
           });
         }
       }
-    } else if (adapter === LLMAdapter.OpenAI) {
-      // OpenAI config is optional, but if provided only supports explicit Responses API routing
+    } else if (
+      adapter === LLMAdapter.OpenAI ||
+      adapter === LLMAdapter.DeepSeek ||
+      adapter === LLMAdapter.Qwen
+    ) {
+      // OpenAI-compatible config: optional, if provided validates OpenAIConfigSchema
       if (config) {
         const result = OpenAIConfigSchema.safeParse(config);
         if (!result.success) {
           ctx.addIssue({
             code: "custom",
-            message: `Invalid OpenAI config: ${result.error.issues.map((e) => e.message).join(", ")}. Expected: { useResponsesApi: boolean }`,
+            message: `Invalid OpenAI-compatible config: ${result.error.issues.map((e) => e.message).join(", ")}. Expected: { useResponsesApi: boolean }`,
             path: ["config"],
           });
         }

@@ -1,0 +1,31 @@
+# 🔧 选用：根据你的 Ingress Controller 取消注释并修改域名
+#
+# 如果你使用 nginx-ingress：
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: langfuse-web
+#   namespace: langfuse
+#   annotations:
+#     nginx.ingress.kubernetes.io/proxy-body-size: "50m"   # 允许上传大文件
+#     nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#     - host: langfuse.your-domain.com                      # 🔧 改为你的域名
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: langfuse-web
+#                 port:
+#                   number: 3000
+#   tls:
+#     - hosts:
+#         - langfuse.your-domain.com
+#       secretName: langfuse-tls                            # 🔧 你的 TLS 证书 Secret
+#
+# 如果使用腾讯云 CLB / TKE Ingress，请参考腾讯云文档配置

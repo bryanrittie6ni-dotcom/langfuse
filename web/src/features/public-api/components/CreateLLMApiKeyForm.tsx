@@ -293,6 +293,11 @@ export function CreateLLMApiKeyForm({
         return customization?.defaultBaseUrlAzure ?? "";
       case LLMAdapter.Anthropic:
         return customization?.defaultBaseUrlAnthropic ?? "";
+      // 国内模型默认 baseURL
+      case LLMAdapter.DeepSeek:
+        return "https://api.deepseek.com/v1";
+      case LLMAdapter.Qwen:
+        return "https://dashscope.aliyuncs.com/compatible-mode/v1";
       default:
         return "";
     }
@@ -378,7 +383,9 @@ export function CreateLLMApiKeyForm({
     adapter === LLMAdapter.OpenAI ||
     adapter === LLMAdapter.Anthropic ||
     adapter === LLMAdapter.VertexAI ||
-    adapter === LLMAdapter.GoogleAIStudio;
+    adapter === LLMAdapter.GoogleAIStudio ||
+    adapter === LLMAdapter.DeepSeek ||
+    adapter === LLMAdapter.Qwen;
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -588,9 +595,15 @@ export function CreateLLMApiKeyForm({
       // If config is empty, set to undefined
       config =
         Object.keys(vertexAIConfig).length > 0 ? vertexAIConfig : undefined;
-    } else if (currentAdapter === LLMAdapter.OpenAI) {
+    } else if (
+      currentAdapter === LLMAdapter.OpenAI ||
+      currentAdapter === LLMAdapter.DeepSeek ||
+      currentAdapter === LLMAdapter.Qwen
+    ) {
+      // OpenAI 兼容协议 adapter: OpenAI useResponsesApi, DeepSeek/Qwen 留空即可
       config =
-        values.openAIUseResponsesApi || mode === "update"
+        currentAdapter === LLMAdapter.OpenAI &&
+        (values.openAIUseResponsesApi || mode === "update")
           ? { useResponsesApi: values.openAIUseResponsesApi }
           : undefined;
     }
@@ -1268,7 +1281,7 @@ export function CreateLLMApiKeyForm({
               )}
 
               {/* Extra Headers */}
-              {[LLMAdapter.OpenAI, LLMAdapter.Anthropic].includes(
+              {[LLMAdapter.OpenAI, LLMAdapter.Anthropic, LLMAdapter.DeepSeek, LLMAdapter.Qwen].includes(
                 currentAdapter,
               ) && renderExtraHeadersField()}
 

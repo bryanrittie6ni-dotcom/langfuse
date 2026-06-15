@@ -364,6 +364,21 @@ function getDefaultAdapterParams(
         providerOptions: { value: {}, enabled: false },
       };
 
+    case LLMAdapter.DeepSeek:
+    case LLMAdapter.Qwen:
+      return {
+        adapter: {
+          value: adapter,
+          enabled: true,
+        },
+        temperature: { value: 0, enabled: false },
+        maxTemperature: { value: 2, enabled: false },
+        max_tokens: { value: 4096, enabled: false },
+        top_p: { value: 1, enabled: false },
+        maxReasoningTokens: { value: 0, enabled: false },
+        providerOptions: { value: {}, enabled: false },
+      };
+
     case LLMAdapter.GoogleAIStudio:
       return {
         adapter: {

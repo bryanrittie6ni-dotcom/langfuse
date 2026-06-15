@@ -439,19 +439,40 @@ export async function fetchLLMCompletion(
         chatModel.temperature = undefined;
       }
     }
-  } else if (modelParams.adapter === LLMAdapter.OpenAI) {
+  } else if (
+    modelParams.adapter === LLMAdapter.OpenAI ||
+    modelParams.adapter === LLMAdapter.DeepSeek ||
+    modelParams.adapter === LLMAdapter.Qwen
+  ) {
+    // 国内模型默认 baseURL
+    const adapterBaseURL =
+      baseURL ??
+      (modelParams.adapter === LLMAdapter.DeepSeek
+        ? "https://api.deepseek.com/v1"
+        : modelParams.adapter === LLMAdapter.Qwen
+          ? "https://dashscope.aliyuncs.com/compatible-mode/v1"
+          : undefined);
     const processedBaseURL = processOpenAIBaseURL({
-      url: baseURL,
+      url: adapterBaseURL,
       modelName: modelParams.model,
     });
-    const openAIConfig = OpenAIConfigSchema.parse(config ?? {});
+    // OpenAI 专属配置（Responses API、reasoning 模型），DeepSeek/Qwen 不适用
+    const openAIConfig =
+      modelParams.adapter === LLMAdapter.OpenAI
+        ? OpenAIConfigSchema.parse(config ?? {})
+        : { useResponsesApi: false };
     usesOpenAIResponsesApi = openAIConfig.useResponsesApi;
+
+    const isReasoningModel =
+      modelParams.adapter === LLMAdapter.OpenAI
+        ? isOpenAIReasoningModel(modelParams.model as OpenAIModel)
+        : false;
 
     chatModel = new ChatOpenAI({
       apiKey,
       model: modelParams.model,
       temperature: modelParams.temperature,
-      ...(isOpenAIReasoningModel(modelParams.model as OpenAIModel)
+      ...(isReasoningModel
         ? { maxCompletionTokens: modelParams.max_tokens }
         : { maxTokens: modelParams.max_tokens }),
       topP: modelParams.top_p,
@@ -462,7 +483,7 @@ export async function fetchLLMCompletion(
         baseURL: processedBaseURL,
         timeout: timeoutMs,
         defaultHeaders: extraHeaders,
-        fetch: secureLlmFetch("OpenAI LLM base URL"),
+        fetch: secureLlmFetch("OpenAI-compatible LLM base URL"),
       },
       useResponsesApi: openAIConfig.useResponsesApi,
       modelKwargs: modelParams.providerOptions,

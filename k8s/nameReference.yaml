@@ -1,0 +1,16 @@
+# 使 Deployment 能通过 annotation 感知 ConfigMap/Secret 变更
+# 当 ConfigMap 或 Secret 内容变化时，kustomize 会给 Pod 模板加上 hash annotation，
+# 从而触发滚动更新，确保新 Pod 读取新配置。
+nameReference:
+  - kind: ConfigMap
+    version: v1
+    fieldSpecs:
+      - path: spec/template/metadata/annotations
+        version: v1
+        kind: Deployment
+  - kind: Secret
+    version: v1
+    fieldSpecs:
+      - path: spec/template/metadata/annotations
+        version: v1
+        kind: Deployment

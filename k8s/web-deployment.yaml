@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: langfuse-web
+  namespace: langfuse
+  labels:
+    app: langfuse-web
+spec:
+  replicas: 1                           # 🔧 生产环境建议 2+
+  selector:
+    matchLabels:
+      app: langfuse-web
+  template:
+    metadata:
+      labels:
+        app: langfuse-web
+    spec:
+      # 🔧 如果使用私有镜像仓库，取消注释下面 3 行
+      imagePullSecrets:
+        - name: ccr-registry-secre
+      containers:
+        - name: langfuse-web
+          image: ccr.ccs.tencentyun.com/my-app-20/langfuse-web:3
+          ports:
+            - containerPort: 3000
+              name: http
+          envFrom:
+            - secretRef:
+                name: langfuse-secrets        # 注入密钥
+            - configMapRef:
+                name: langfuse-config         # 注入普通配置
+          env:
+            # 容器运行时固定配置，一般不需修改
+            - name: HOSTNAME
+              value: "0.0.0.0"
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+          resources:                           # 🔧 按实际调整
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"
+          startupProbe:                        # 启动探测 — 给首次迁移留足时间
+            httpGet:
+              path: /api/public/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30              # 最多等 10 + 30*5 = 160 秒
+          livenessProbe:
+            httpGet:
+              path: /api/public/health
+              port: 3000
+            initialDelaySeconds: 0
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/public/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: langfuse-web
+  namespace: langfuse
+  labels:
+    app: langfuse-web
+spec:
+  type: ClusterIP
+  selector:
+    app: langfuse-web
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http

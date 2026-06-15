@@ -243,6 +243,8 @@ export enum LLMAdapter {
   Bedrock = "bedrock",
   VertexAI = "google-vertex-ai",
   GoogleAIStudio = "google-ai-studio",
+  DeepSeek = "deepseek",
+  Qwen = "qwen",
 }
 
 export const TextPromptContentSchema = z.string().min(1, "Enter a prompt");
@@ -484,13 +486,37 @@ export const googleAIStudioModels = [
   "gemini-1.5-flash-8b",
 ] as const;
 
+// 国内模型: DeepSeek (OpenAI 兼容协议)
+// baseURL 默认: https://api.deepseek.com/v1
+export const deepseekModels = [
+  "deepseek-chat",
+  "deepseek-reasoner",
+  "deepseek-v3",
+] as const;
+
+// 国内模型: 通义千问 Qwen / DashScope (OpenAI 兼容协议)
+// baseURL 默认: https://dashscope.aliyuncs.com/compatible-mode/v1
+export const qwenModels = [
+  "qwen-max",
+  "qwen-plus",
+  "qwen-turbo",
+  "qwen3-235b-a22b",
+  "qwen3-32b",
+  "qwq-plus",
+  "qwq-32b",
+] as const;
+
 export type AnthropicModel = (typeof anthropicModels)[number];
 export type VertexAIModel = (typeof vertexAIModels)[number];
+export type DeepSeekModel = (typeof deepseekModels)[number];
+export type QwenModel = (typeof qwenModels)[number];
 export const supportedModels = {
   [LLMAdapter.Anthropic]: anthropicModels,
   [LLMAdapter.OpenAI]: openAIModels,
   [LLMAdapter.VertexAI]: vertexAIModels,
   [LLMAdapter.GoogleAIStudio]: googleAIStudioModels,
+  [LLMAdapter.DeepSeek]: deepseekModels,
+  [LLMAdapter.Qwen]: qwenModels,
   [LLMAdapter.Azure]: [],
   [LLMAdapter.Bedrock]: [],
 } as const;
