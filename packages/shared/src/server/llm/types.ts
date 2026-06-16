@@ -491,7 +491,8 @@ export const googleAIStudioModels = [
 export const deepseekModels = [
   "deepseek-chat",
   "deepseek-reasoner",
-  "deepseek-v3",
+  "deepseek-v4-pro",
+  "deepseek-v4-flash",
 ] as const;
 
 // 国内模型: 通义千问 Qwen / DashScope (OpenAI 兼容协议)
