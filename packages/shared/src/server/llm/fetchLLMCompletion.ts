@@ -641,9 +641,15 @@ export async function fetchLLMCompletion(
       // Thinking-capable adapters may produce reasoning blocks that corrupt JSON schema
       // parsing. Force function calling so the parser reads from tool_calls instead.
       const structuredOutputSchema = params.structuredOutputSchema;
-      const structuredOutputConfig = supportsReasoning
-        ? { method: "functionCalling" as const }
-        : undefined;
+      // Reasoned models need functionCalling to avoid reasoning blocks corrupting
+      // JSON schema parsing. DeepSeek/Qwen don't support json_schema at all, so
+      // they also need functionCalling for structured output.
+      const structuredOutputConfig =
+        supportsReasoning ||
+        modelParams.adapter === LLMAdapter.DeepSeek ||
+        modelParams.adapter === LLMAdapter.Qwen
+          ? { method: "functionCalling" as const }
+          : undefined;
       const createStructuredOutputModel = () => {
         if (
           modelParams.adapter !== LLMAdapter.Anthropic ||
