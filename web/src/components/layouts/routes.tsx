@@ -4,7 +4,6 @@ import {
   BellRing,
   Database,
   LayoutDashboard,
-  LifeBuoy,
   ListTree,
   type LucideIcon,
   Settings,
@@ -12,7 +11,6 @@ import {
   TerminalIcon,
   Lightbulb,
   Grid2X2,
-  Sparkle,
   FileJson,
   Search,
   Home,
@@ -25,15 +23,10 @@ import { type ReactNode } from "react";
 import { type Entitlement } from "@/src/features/entitlements/constants/entitlements";
 import { type User } from "next-auth";
 import { type OrganizationScope } from "@/src/features/rbac/constants/organizationAccessRights";
-import { SupportButton } from "@/src/components/nav/support-button";
-import { InAppAiAgentButton } from "@/src/components/nav/in-app-ai-agent-button";
-import { BookACallButton } from "@/src/components/nav/book-a-call-button";
-import { V4SidebarToggle } from "@/src/features/events/components/V4SidebarToggle";
 import { SidebarMenuButton } from "@/src/components/ui/sidebar";
 import { KeyboardShortcut } from "@/src/components/ui/keyboard-shortcut";
 import { useCommandMenu } from "@/src/features/command-k-menu/CommandMenuProvider";
 import { usePostHogClientCapture } from "@/src/features/posthog-analytics/usePostHogClientCapture";
-import { CloudStatusMenu } from "@/src/features/cloud-status-notification/components/CloudStatusMenu";
 import { type ProductModule } from "@/src/ee/features/ui-customization/productModuleSchema";
 
 export enum RouteSection {
@@ -195,37 +188,6 @@ export const ROUTES: Route[] = [
     section: RouteSection.Main,
   },
   {
-    title: "Upgrade",
-    icon: Sparkle,
-    pathname: "/project/[projectId]/settings/billing",
-    section: RouteSection.Secondary,
-    entitlements: ["cloud-billing"],
-    organizationRbacScope: "langfuseCloudBilling:CRUD",
-    show: ({ organization }) => organization?.plan === "cloud:hobby",
-  },
-  {
-    title: "Upgrade",
-    icon: Sparkle,
-    pathname: "/organization/[organizationId]/settings/billing",
-    section: RouteSection.Secondary,
-    entitlements: ["cloud-billing"],
-    organizationRbacScope: "langfuseCloudBilling:CRUD",
-    show: ({ organization }) => organization?.plan === "cloud:hobby",
-  },
-  {
-    title: "Cloud Status",
-    section: RouteSection.Secondary,
-    pathname: "",
-    menuNode: <CloudStatusMenu />,
-  },
-  {
-    title: "Preview (fast)",
-    pathname: "",
-    section: RouteSection.Secondary,
-    featureFlag: "v4BetaToggleVisible",
-    menuNode: <V4SidebarToggle />,
-  },
-  {
     title: "Settings",
     pathname: "/project/[projectId]/settings",
     icon: Settings,
@@ -236,28 +198,6 @@ export const ROUTES: Route[] = [
     pathname: "/organization/[organizationId]/settings",
     icon: Settings,
     section: RouteSection.Secondary,
-  },
-  {
-    title: "Book a call",
-    section: RouteSection.Secondary,
-    pathname: "",
-    menuNode: <BookACallButton />,
-  },
-  {
-    title: "Assistant",
-    section: RouteSection.Secondary,
-    pathname: "",
-    featureFlag: "inAppAgent",
-    show: ({ organization, projectId, isLangfuseCloud }) =>
-      isLangfuseCloud && organization !== undefined && projectId !== undefined,
-    menuNode: <InAppAiAgentButton />,
-  },
-  {
-    title: "Support",
-    icon: LifeBuoy,
-    section: RouteSection.Secondary,
-    pathname: "", // Empty pathname since this is a dropdown
-    menuNode: <SupportButton />,
   },
 ];
 

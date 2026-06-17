@@ -4,7 +4,7 @@
  * Used for all main application pages when user is authenticated
  */
 
-import { useState, type PropsWithChildren } from "react";
+import { type PropsWithChildren } from "react";
 import Head from "next/head";
 import { SidebarProvider, SidebarInset } from "@/src/components/ui/sidebar";
 import { AppSidebar } from "@/src/components/nav/app-sidebar";
@@ -12,51 +12,15 @@ import { Toaster } from "@/src/components/ui/sonner";
 import { TopBannerProvider } from "@/src/features/top-banner";
 import { AppContentWithRightDrawer } from "../right-drawer/AppContentWithRightDrawer";
 import { ThemeToggle } from "@/src/features/theming/ThemeToggle";
-import {
-  getAvailableCloudRegionOptions,
-  getCloudRegionAuthUrl,
-} from "@/src/features/organizations/cloudRegions";
-import { useLangfuseCloudRegion } from "@/src/features/organizations/hooks";
 import type { Session } from "next-auth";
 import type { NavigationItem } from "@/src/components/layouts/utilities/routes";
 import type { RouteGroup } from "@/src/components/layouts/routes";
 import dynamic from "next/dynamic";
-import { ControlledFeaturePreviewModal } from "@/src/features/feature-previews/components/ControlledFeaturePreviewModal";
 
 const CommandMenu = dynamic(
   () =>
     import("@/src/features/command-k-menu/CommandMenu").then((mod) => ({
       default: mod.CommandMenu,
-    })),
-  {
-    ssr: false,
-  },
-);
-
-const PaymentBanner = dynamic(
-  () =>
-    import("@/src/features/payment-banner").then((mod) => ({
-      default: mod.PaymentBanner,
-    })),
-  {
-    ssr: false,
-  },
-);
-
-const V4EnabledBanner = dynamic(
-  () =>
-    import("@/src/features/events/components/V4EnabledBanner").then((mod) => ({
-      default: mod.V4EnabledBanner,
-    })),
-  {
-    ssr: false,
-  },
-);
-
-const V4PromoBanner = dynamic(
-  () =>
-    import("@/src/features/events/components/V4PromoBanner").then((mod) => ({
-      default: mod.V4PromoBanner,
     })),
   {
     ssr: false,
@@ -102,9 +66,6 @@ export function AuthenticatedLayout({
   metadata,
   onSignOut,
 }: AuthenticatedLayoutProps) {
-  const { isLangfuseCloud, region: currentRegion } = useLangfuseCloudRegion();
-  const [featurePreviewOpen, setFeaturePreviewOpen] = useState(false);
-
   // Safe assertion: AuthenticatedLayout is only rendered after auth checks pass
   // in AppLayout, which guarantees session.user exists at this point
   const user = session.user;
@@ -112,23 +73,6 @@ export function AuthenticatedLayout({
     // This should never happen due to guards in AppLayout, but TypeScript needs this
     return null;
   }
-
-  const regionMenuItems = getAvailableCloudRegionOptions(currentRegion).map(
-    (region) => ({
-      name: region.name,
-      content: `${region.flag} ${region.name}`,
-      onClick: () => {
-        if (!region.rootUrl) return;
-        window.open(
-          getCloudRegionAuthUrl(region.rootUrl, user.email),
-          "_blank",
-          "noopener,noreferrer",
-        );
-      },
-    }),
-  );
-
-  const hasFeaturePreviews = isLangfuseCloud;
 
   // User navigation items for sidebar dropdown
   const userNavProps = {
@@ -140,30 +84,6 @@ export function AuthenticatedLayout({
     items: [
       { name: "Account Settings", href: "/account/settings" },
       { name: "Theme", onClick: () => {}, content: <ThemeToggle /> },
-      ...(hasFeaturePreviews
-        ? [
-            {
-              name: "Feature Preview",
-              onClick: () => setFeaturePreviewOpen(true),
-            },
-          ]
-        : []),
-      ...(isLangfuseCloud
-        ? [
-            {
-              name: "Regions",
-              subItems: regionMenuItems,
-              content: (
-                <>
-                  Regions
-                  <div className="ml-2 inline-flex rounded bg-black/5 p-1 text-xs dark:bg-white/10">
-                    Current: {currentRegion}
-                  </div>
-                </>
-              ),
-            },
-          ]
-        : []),
       { name: "Sign out", onClick: onSignOut },
     ],
   };
@@ -185,9 +105,6 @@ export function AuthenticatedLayout({
       <TopBannerProvider>
         <SidebarProvider>
           <div className="flex h-dvh w-full flex-col">
-            <PaymentBanner />
-            <V4EnabledBanner />
-            <V4PromoBanner />
             <div className="pt-banner-offset flex min-h-0 flex-1">
               <AppSidebar
                 navItems={navigation.mainNavigation}
@@ -202,13 +119,6 @@ export function AuthenticatedLayout({
                 <CommandMenu mainNavigation={navigation.navigation} />
               </SidebarInset>
             </div>
-            {hasFeaturePreviews ? (
-              <ControlledFeaturePreviewModal
-                session={session}
-                open={featurePreviewOpen}
-                onOpenChange={setFeaturePreviewOpen}
-              />
-            ) : null}
           </div>
         </SidebarProvider>
       </TopBannerProvider>

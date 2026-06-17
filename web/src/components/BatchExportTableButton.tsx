@@ -18,9 +18,10 @@ import {
   BatchTableNames,
 } from "@langfuse/shared";
 import React from "react";
-import { api } from "@/src/utils/api";
 import { showSuccessToast } from "@/src/features/notifications/showSuccessToast";
+import { showErrorToast } from "@/src/features/notifications/showErrorToast";
 import { useHasProjectAccess } from "@/src/features/rbac/utils/checkProjectAccess";
+import { downloadFileFromPost } from "@/src/utils/downloadFile";
 
 export type BatchExportTableButtonProps = {
   projectId: string;
@@ -35,22 +36,7 @@ export const BatchExportTableButton: React.FC<BatchExportTableButtonProps> = (
   props,
 ) => {
   const [isExporting, setIsExporting] = React.useState(false);
-  const createExport = api.batchExport.create.useMutation({
-    onSettled: () => {
-      setIsExporting(false);
-    },
-    onSuccess: () => {
-      showSuccessToast({
-        title: "Export queued",
-        description: "You will receive an email when the export is ready.",
-        duration: 10000,
-        link: {
-          href: `/project/${props.projectId}/settings/exports`,
-          text: "View exports",
-        },
-      });
-    },
-  });
+  const [exportingFormat, setExportingFormat] = React.useState<string | null>(null);
   const hasAccess = useHasProjectAccess({
     projectId: props.projectId,
     scope: "batchExports:create",
@@ -58,18 +44,37 @@ export const BatchExportTableButton: React.FC<BatchExportTableButtonProps> = (
 
   const handleExport = async (format: BatchExportFileFormat) => {
     setIsExporting(true);
-    await createExport.mutateAsync({
-      projectId: props.projectId,
-      name: `${new Date().toISOString()} - ${props.tableName} as ${format}`,
-      format,
-      query: {
-        tableName: props.tableName,
-        filter: props.filterState,
-        searchQuery: props.searchQuery || undefined,
-        searchType: props.searchType || undefined,
-        orderBy: props.orderByState,
-      },
-    });
+    setExportingFormat(format);
+    try {
+      const ext = format === "CSV" ? "csv" : format === "JSON" ? "json" : "jsonl";
+      const fileName = `${props.tableName}-export-${new Date().toISOString().slice(0, 10)}.${ext}`;
+      await downloadFileFromPost(
+        "/api/public/exports/download",
+        {
+          projectId: props.projectId,
+          tableName: props.tableName,
+          format,
+          filter: props.filterState,
+          searchQuery: props.searchQuery || undefined,
+          searchType: props.searchType || undefined,
+          orderBy: props.orderByState,
+        },
+        fileName,
+      );
+      showSuccessToast({
+        title: "Export complete",
+        description: "Your file has been downloaded.",
+        duration: 5000,
+      });
+    } catch (error) {
+      showErrorToast(
+        error instanceof Error ? error.message : "Export failed",
+        "Please try again.",
+      );
+    } finally {
+      setIsExporting(false);
+      setExportingFormat(null);
+    }
   };
 
   if (!hasAccess) return null;
